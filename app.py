@@ -18,7 +18,10 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'tu-clave-secreta-aqui-c
 # Base de datos: PostgreSQL en producción, SQLite en desarrollo
 if os.environ.get('DATABASE_URL'):
     # Producción (Railway, Heroku, etc.)
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL').replace('postgres://', 'postgresql://')
+    database_url = os.environ.get('DATABASE_URL')
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 else:
     # Desarrollo local
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///aula_diplomados.db'
@@ -1137,29 +1140,30 @@ def init_db():
         
         # Migración: Agregar campos adicionales si no existen
         try:
-            # Verificar si las columnas existen
-            with db.engine.connect() as connection:
-                result = connection.execute(db.text("PRAGMA table_info(enrollment_request)"))
-                columns = [row[1] for row in result.fetchall()]
-                
-                if 'whatsapp_number' not in columns:
-                    print("Agregando campo whatsapp_number a la tabla enrollment_request...")
-                    connection.execute(db.text("ALTER TABLE enrollment_request ADD COLUMN whatsapp_number VARCHAR(20)"))
-                    connection.commit()
-                    print("Campo whatsapp_number agregado exitosamente")
-                else:
-                    print("Campo whatsapp_number ya existe")
+            # Solo intentar migración en desarrollo (SQLite)
+            if not os.environ.get('DATABASE_URL'):
+                # Desarrollo - SQLite
+                with db.engine.connect() as connection:
+                    result = connection.execute(db.text("PRAGMA table_info(enrollment_request)"))
+                    columns = [row[1] for row in result.fetchall()]
                     
-                if 'voucher_file' not in columns:
-                    print("Agregando campo voucher_file a la tabla enrollment_request...")
-                    connection.execute(db.text("ALTER TABLE enrollment_request ADD COLUMN voucher_file VARCHAR(200)"))
-                    connection.commit()
-                    print("Campo voucher_file agregado exitosamente")
-                else:
-                    print("Campo voucher_file ya existe")
+                    if 'whatsapp_number' not in columns:
+                        print("Agregando campo whatsapp_number...")
+                        connection.execute(db.text("ALTER TABLE enrollment_request ADD COLUMN whatsapp_number VARCHAR(20)"))
+                        connection.commit()
+                        print("✅ Campo whatsapp_number agregado")
+                        
+                    if 'voucher_file' not in columns:
+                        print("Agregando campo voucher_file...")
+                        connection.execute(db.text("ALTER TABLE enrollment_request ADD COLUMN voucher_file VARCHAR(200)"))
+                        connection.commit()
+                        print("✅ Campo voucher_file agregado")
+            else:
+                # Producción - PostgreSQL
+                print("🔄 Producción: Las tablas se crean completas desde el principio")
+                
         except Exception as e:
-            print(f"Error en migración: {e}")
-            print("Nota: Si es la primera ejecución, esto es normal")
+            print(f"ℹ️ Migración no necesaria: {e}")
         
         # Crear usuario admin por defecto si no existe
         admin = User.query.filter_by(username='Yubert').first()
@@ -1182,6 +1186,12 @@ def init_db():
         print("- ClassSchedule: Para horarios de clases")
 
 if __name__ == '__main__':
-    init_db()  # Inicializar base de datos al arrancar
+    try:
+        init_db()  # Inicializar base de datos al arrancar
+        print("🚀 Iniciando servidor...")
+    except Exception as e:
+        print(f"⚠️ Error en inicialización: {e}")
+        print("🔄 Continuando con servidor...")
+    
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
