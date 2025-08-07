@@ -2,8 +2,8 @@ services:
   - type: web
     name: aula-virtual-diplomados
     env: python
-    buildCommand: pip install --force-reinstall -r requirements.txt
-    startCommand: gunicorn app:app
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT app:app
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.0
+        value: 3.12.8
