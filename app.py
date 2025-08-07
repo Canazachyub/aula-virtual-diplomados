@@ -19,7 +19,10 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'tu-clave-secreta-aqui-c
 if os.environ.get('DATABASE_URL'):
     # Producción (Railway, Heroku, etc.)
     database_url = os.environ.get('DATABASE_URL')
-    if database_url.startswith('postgres://'):
+    # Corregir formato de URL si es necesario
+    if database_url.startswith('postgres//'):
+        database_url = database_url.replace('postgres//', 'postgresql://', 1)
+    elif database_url.startswith('postgres://'):
         database_url = database_url.replace('postgres://', 'postgresql://', 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 else:
@@ -1185,13 +1188,14 @@ def init_db():
         print("- Notification: Para sistema de notificaciones")
         print("- ClassSchedule: Para horarios de clases")
 
+# Inicializar la base de datos automáticamente
+try:
+    init_db()
+    print("🚀 Base de datos inicializada correctamente")
+except Exception as e:
+    print(f"⚠️ Error en inicialización de BD: {e}")
+    print("🔄 Continuando...")
+
 if __name__ == '__main__':
-    try:
-        init_db()  # Inicializar base de datos al arrancar
-        print("🚀 Iniciando servidor...")
-    except Exception as e:
-        print(f"⚠️ Error en inicialización: {e}")
-        print("🔄 Continuando con servidor...")
-    
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
