@@ -1132,18 +1132,24 @@ def profile():
                          enrollments=enrollments,
                          teaching_courses=teaching_courses)
 
-# Inicializar la base de datos
-def init_db():
+# Función simplificada para inicializar tablas (usada por init_db.py)
+def init_db_tables():
+    """Inicializa las tablas de la base de datos"""
     # Crear carpeta de uploads si no existe
     upload_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads')
     os.makedirs(upload_dir, exist_ok=True)
     
+    db.create_all()
+    print("✅ Tablas de base de datos creadas")
+
+# Función completa de inicialización (para desarrollo local)
+def init_db():
+    """Inicialización completa con migraciones y usuario admin"""
+    init_db_tables()
+    
     with app.app_context():
-        db.create_all()
-        
-        # Migración: Agregar campos adicionales si no existen
+        # Migración: Agregar campos adicionales si no existen (solo SQLite)
         try:
-            # Solo intentar migración en desarrollo (SQLite)
             if not os.environ.get('DATABASE_URL'):
                 # Desarrollo - SQLite
                 with db.engine.connect() as connection:
@@ -1161,10 +1167,7 @@ def init_db():
                         connection.execute(db.text("ALTER TABLE enrollment_request ADD COLUMN voucher_file VARCHAR(200)"))
                         connection.commit()
                         print("✅ Campo voucher_file agregado")
-            else:
-                # Producción - PostgreSQL
-                print("🔄 Producción: Las tablas se crean completas desde el principio")
-                
+                        
         except Exception as e:
             print(f"ℹ️ Migración no necesaria: {e}")
         
@@ -1180,21 +1183,9 @@ def init_db():
             )
             db.session.add(admin)
             db.session.commit()
-            print("Usuario admin creado exitosamente")
+            print("✅ Usuario admin creado")
         
-        print("Base de datos inicializada correctamente")
-        print("Nuevas tablas creadas:")
-        print("- EnrollmentRequest: Para solicitudes de inscripción")
-        print("- Notification: Para sistema de notificaciones")
-        print("- ClassSchedule: Para horarios de clases")
-
-# Inicializar la base de datos automáticamente
-try:
-    init_db()
-    print("🚀 Base de datos inicializada correctamente")
-except Exception as e:
-    print(f"⚠️ Error en inicialización de BD: {e}")
-    print("🔄 Continuando...")
+        print("🎉 Base de datos inicializada correctamente")
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
