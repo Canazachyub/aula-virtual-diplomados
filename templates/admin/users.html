@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Usuarios - Aula Virtual{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard Admin</a></li>
+                    <li class="breadcrumb-item active">Gestión de Usuarios</li>
+                </ol>
+            </nav>
+            
+            <h1 class="mb-4">
+                <i class="bi bi-people"></i> Gestión de Usuarios
+            </h1>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h6>Total Usuarios</h6>
+                    <h3>{{ users|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h6>Administradores</h6>
+                    <h3>{{ users|selectattr('role', 'equalto', 'admin')|list|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h6>Docentes</h6>
+                    <h3>{{ users|selectattr('role', 'equalto', 'teacher')|list|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h6>Estudiantes</h6>
+                    <h3>{{ users|selectattr('role', 'equalto', 'student')|list|length }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <input type="text" class="form-control" id="searchUser" placeholder="Buscar por nombre o email...">
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="filterRole">
+                                <option value="">Todos los roles</option>
+                                <option value="admin">Administradores</option>
+                                <option value="teacher">Docentes</option>
+                                <option value="student">Estudiantes</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-outline-primary w-100" onclick="filterUsers()">
+                                <i class="bi bi-funnel"></i> Filtrar
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                                <i class="bi bi-person-plus"></i> Agregar Usuario
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de Usuarios -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Usuario</th>
+                                    <th>Nombre Completo</th>
+                                    <th>Email</th>
+                                    <th>Rol</th>
+                                    <th>Fecha Registro</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                {% for user in users %}
+                                <tr class="user-row" data-username="{{ user.username.lower() }}" data-email="{{ user.email.lower() }}" data-role="{{ user.role }}">
+                                    <td>{{ user.id }}</td>
+                                    <td>{{ user.username }}</td>
+                                    <td>{{ user.full_name or '-' }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'danger' if user.role == 'admin' else 'info' if user.role == 'teacher' else 'success' }}">
+                                            {{ 'Administrador' if user.role == 'admin' else 'Docente' if user.role == 'teacher' else 'Estudiante' }}
+                                        </span>
+                                    </td>
+                                    <td>{{ user.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            {% if user.id != current_user.id %}
+                                            <button class="btn btn-sm btn-outline-danger" onclick="confirmDelete({{ user.id }}, '{{ user.username }}')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para agregar usuario -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-person-plus"></i> Agregar Nuevo Usuario
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('register') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="newFullName" class="form-label">Nombre Completo</label>
+                        <input type="text" class="form-control" id="newFullName" name="full_name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="newUsername" class="form-label">Nombre de Usuario</label>
+                        <input type="text" class="form-control" id="newUsername" name="username" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="newEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="newEmail" name="email" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="newPassword" class="form-label">Contraseña</label>
+                        <input type="password" class="form-control" id="newPassword" name="password" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="newRole" class="form-label">Rol</label>
+                        <select class="form-select" id="newRole" name="role" required>
+                            <option value="student">Estudiante</option>
+                            <option value="teacher">Docente</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Crear Usuario
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterUsers() {
+    const searchTerm = document.getElementById('searchUser').value.toLowerCase();
+    const roleFilter = document.getElementById('filterRole').value;
+    const userRows = document.querySelectorAll('.user-row');
+    
+    userRows.forEach(row => {
+        const username = row.getAttribute('data-username');
+        const email = row.getAttribute('data-email');
+        const role = row.getAttribute('data-role');
+        
+        let showRow = true;
+        
+        // Filtro por búsqueda
+        if (searchTerm && !username.includes(searchTerm) && !email.includes(searchTerm)) {
+            showRow = false;
+        }
+        
+        // Filtro por rol
+        if (roleFilter && role !== roleFilter) {
+            showRow = false;
+        }
+        
+        row.style.display = showRow ? '' : 'none';
+    });
+}
+
+function editUser(userId) {
+    alert('Función de edición en desarrollo para usuario ID: ' + userId);
+}
+
+function confirmDelete(userId, username) {
+    if (confirm(`¿Estás seguro de que deseas eliminar al usuario "${username}"?\n\nEsta acción eliminará:\n- Todas sus inscripciones\n- Sus solicitudes de inscripción\n- Sus notificaciones\n- Sus materiales subidos\n\nEsta acción NO se puede deshacer.`)) {
+        // Crear formulario para eliminar
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/admin/delete-user/${userId}`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Búsqueda en tiempo real
+document.getElementById('searchUser').addEventListener('keyup', filterUsers);
+</script>
+{% endblock %}

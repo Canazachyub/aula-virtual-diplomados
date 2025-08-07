@@ -1,0 +1,912 @@
+{% extends "base.html" %}
+
+{% block title %}{{ course.name }} - Aula Virtual{% endblock %}
+
+{% block extra_css %}
+<style>
+.padlet-board {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    padding: 20px 0;
+    min-height: 600px;
+}
+
+.padlet-column {
+    min-width: 350px;
+    max-width: 350px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.column-header {
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    font-weight: bold;
+    text-align: center;
+    color: #333 !important;
+    text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+}
+
+.padlet-card {
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.padlet-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+.card-type-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 0.75rem;
+}
+
+.add-card-btn {
+    width: 100%;
+    border: 2px dashed #007bff;
+    background: transparent;
+    color: #007bff;
+    padding: 10px;
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+
+.add-card-btn:hover {
+    background: #007bff;
+    color: white;
+}
+
+.media-preview {
+    width: 100%;
+    max-height: 200px;
+    object-fit: cover;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+.pdf-preview {
+    width: 100%;
+    height: 300px;
+    border: none;
+    border-radius: 5px;
+}
+
+.link-preview {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    background: #f0f0f0;
+    border-radius: 5px;
+    text-decoration: none;
+    color: #333;
+}
+
+.link-preview:hover {
+    background: #e0e0e0;
+}
+
+.video-wrapper {
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: 56.25%; /* Aspect ratio 16:9 */
+    margin-bottom: 10px;
+}
+
+.video-wrapper iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 5px;
+}
+
+.file-preview-container {
+    border: 2px dashed #e9ecef;
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.preview-thumbnail {
+    cursor: pointer;
+    padding: 15px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.preview-thumbnail:hover {
+    background: rgba(59, 130, 246, 0.1);
+    transform: scale(1.05);
+}
+
+.file-preview-container:hover {
+    border-color: var(--primary-color);
+    background: #f0f4ff;
+}
+
+.media-preview {
+    cursor: pointer;
+    border-radius: 8px;
+    transition: transform 0.3s ease;
+    max-height: 150px;
+}
+
+.media-preview:hover {
+    transform: scale(1.02);
+}
+
+.course-header-card {
+    box-shadow: 0 4px 20px rgba(30, 64, 175, 0.3);
+}
+
+.pdf-preview {
+    width: 100%;
+    height: 250px;
+    border: none;
+    border-radius: 8px;
+}
+
+.link-preview-small {
+    text-align: center;
+    padding: 30px;
+    border: 2px dashed #e9ecef;
+    border-radius: 8px;
+    background: #f8f9fa;
+}
+
+.video-wrapper iframe {
+    border-radius: 8px;
+}
+
+.column-menu-btn {
+    border: none !important;
+    padding: 2px 6px;
+    font-size: 0.8rem;
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+}
+
+.column-menu-btn:hover {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.column-header:hover .column-menu-btn {
+    opacity: 1;
+}
+
+.column-title {
+    flex-grow: 1;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Encabezado del Curso -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card text-white course-header-card" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);">
+                <div class="card-body">
+                    <h1 class="card-title text-white font-weight-bold">
+                        <i class="bi bi-book"></i> {{ course.name }}
+                    </h1>
+                    <p class="card-text text-white">{{ course.description }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="text-white">
+                            <i class="bi bi-person-check"></i> 
+                            <strong>Docente:</strong> {{ course.teacher.full_name or course.teacher.username if course.teacher else 'Sin asignar' }}
+                        </div>
+                        {% if is_teacher %}
+                        <button class="btn btn-light" onclick="showAddColumnModal()">
+                            <i class="bi bi-plus-circle"></i> Agregar Columna
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tablero tipo Padlet -->
+    <div class="padlet-board" id="padletBoard">
+        {% for column in columns %}
+        <div class="padlet-column" data-column-id="{{ column.id }}">
+            <div class="column-header" style="background-color: {{ column.color }};" data-bg-color="{{ column.color }}">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="column-title">{{ column.title }}</span>
+                    {% if current_user.role == 'admin' %}
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-light dropdown-toggle column-menu-btn" type="button" 
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-three-dots"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item" href="#" onclick="editColumnModal({{ column.id }}, '{{ column.title }}', '{{ column.color }}')">
+                                    <i class="bi bi-pencil"></i> Editar Columna
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="#" onclick="confirmDeleteColumn({{ column.id }}, '{{ column.title }}')">
+                                    <i class="bi bi-trash"></i> Eliminar Columna
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="cards-container" id="column-{{ column.id }}">
+                {% for card in column.cards %}
+                <div class="padlet-card position-relative">
+                    {% if card.card_type == 'video' %}
+                        <span class="badge bg-danger card-type-badge">Video</span>
+                        <h6>{{ card.title }}</h6>
+                        {% if card.file_url %}
+                        <div class="mb-3">
+                            <video controls class="media-preview" style="width: 100%; max-height: 180px; border-radius: 8px;">
+                                <source src="{{ card.file_url }}" type="video/mp4">
+                                Tu navegador no soporta el elemento de video.
+                            </video>
+                        </div>
+                        <div class="btn-group w-100" role="group">
+                            <button class="btn btn-sm btn-primary" onclick="openFileModal('{{ card.file_url }}', 'video', '{{ card.title }}')">
+                                <i class="bi bi-eye"></i> Ver
+                            </button>
+                            <a href="{{ card.file_url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-box-arrow-up-right"></i> Abrir
+                            </a>
+                        </div>
+                        {% endif %}
+                    {% elif card.card_type == 'pdf' %}
+                        <span class="badge bg-success card-type-badge">PDF</span>
+                        <h6>{{ card.title }}</h6>
+                        {% if card.file_url %}
+                        <div class="mb-3">
+                            <iframe src="{{ card.file_url }}" class="pdf-preview" style="width: 100%; height: 250px; border: none; border-radius: 8px;">
+                            </iframe>
+                        </div>
+                        <div class="btn-group w-100" role="group">
+                            <button class="btn btn-sm btn-primary" onclick="openFileModal('{{ card.file_url }}', 'pdf', '{{ card.title }}')">
+                                <i class="bi bi-eye"></i> Ver
+                            </button>
+                            <a href="{{ card.file_url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-download"></i> Descargar
+                            </a>
+                        </div>
+                        {% endif %}
+                    {% elif card.card_type == 'link' %}
+                        <span class="badge bg-info card-type-badge">Link</span>
+                        <h6>{{ card.title }}</h6>
+                        {% if card.link_url %}
+                        <div class="mb-3">
+                            <div class="video-wrapper" onclick="openVideoModal('{{ card.link_url }}', '{{ card.title }}')" style="cursor: pointer;">
+                                {% if 'youtube.com' in card.link_url or 'youtu.be' in card.link_url %}
+                                    {% set video_id = card.link_url.split('v=')[1].split('&')[0] if 'v=' in card.link_url else card.link_url.split('/')[-1] %}
+                                    <iframe src="https://www.youtube.com/embed/{{ video_id }}" 
+                                            frameborder="0" 
+                                            style="width: 100%; height: 180px; border-radius: 8px; pointer-events: none;"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                            allowfullscreen>
+                                    </iframe>
+                                {% elif 'drive.google.com' in card.link_url %}
+                                    {% set drive_id = card.link_url.split('/d/')[1].split('/')[0] if '/d/' in card.link_url else '' %}
+                                    <iframe src="https://drive.google.com/file/d/{{ drive_id }}/preview" 
+                                            style="width: 100%; height: 180px; border: none; border-radius: 8px; pointer-events: none;">
+                                    </iframe>
+                                {% else %}
+                                    <div class="link-preview-small">
+                                        <i class="bi bi-play-circle display-4 text-info"></i>
+                                        <small class="d-block mt-2">Click para ver video</small>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="btn-group w-100" role="group">
+                            <button class="btn btn-sm btn-primary" onclick="openVideoModal('{{ card.link_url }}', '{{ card.title }}')">
+                                <i class="bi bi-play"></i> Ver Video
+                            </button>
+                            <a href="{{ card.link_url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-box-arrow-up-right"></i> Abrir Link
+                            </a>
+                        </div>
+                        {% endif %}
+                    {% elif card.card_type == 'image' %}
+                        <span class="badge bg-warning card-type-badge">Imagen</span>
+                        <h6>{{ card.title }}</h6>
+                        {% if card.file_url %}
+                        <div class="file-preview-container mb-3">
+                            <img src="{{ card.file_url }}" class="media-preview" alt="{{ card.title }}" onclick="openFileModal('{{ card.file_url }}', 'image', '{{ card.title }}')">
+                        </div>
+                        <div class="btn-group w-100" role="group">
+                            <button class="btn btn-sm btn-primary" onclick="openFileModal('{{ card.file_url }}', 'image', '{{ card.title }}')">
+                                <i class="bi bi-eye"></i> Ver Grande
+                            </button>
+                            <a href="{{ card.file_url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-download"></i> Descargar
+                            </a>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <span class="badge bg-secondary card-type-badge">Texto</span>
+                        <h6>{{ card.title }}</h6>
+                    {% endif %}
+                    
+                    {% if card.content %}
+                    <p class="card-text">{{ card.content }}</p>
+                    {% endif %}
+                    
+                    <small class="text-muted">
+                        <i class="bi bi-clock"></i> {{ card.created_at.strftime('%d/%m/%Y %H:%M') if card.created_at else '' }}
+                    </small>
+                </div>
+                {% endfor %}
+            </div>
+            
+            {% if is_teacher %}
+            <button class="add-card-btn" onclick="showAddCardModal({{ column.id }})">
+                <i class="bi bi-plus"></i> Agregar Tarjeta
+            </button>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal para agregar columna -->
+{% if is_teacher %}
+<div class="modal fade" id="addColumnModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Agregar Nueva Columna</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addColumnForm">
+                    <div class="mb-3">
+                        <label for="columnTitle" class="form-label">Título de la Columna</label>
+                        <input type="text" class="form-control" id="columnTitle" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="columnColor" class="form-label">Color de la Columna</label>
+                        <input type="color" class="form-control" id="columnColor" value="#f0f0f0">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="addColumn()">Agregar Columna</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para agregar tarjeta -->
+<div class="modal fade" id="addCardModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Agregar Nueva Tarjeta</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addCardForm">
+                    <input type="hidden" id="cardColumnId">
+                    <div class="mb-3">
+                        <label for="cardTitle" class="form-label">Título</label>
+                        <input type="text" class="form-control" id="cardTitle" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="cardType" class="form-label">Tipo de Contenido</label>
+                        <select class="form-select" id="cardType" onchange="toggleCardFields()">
+                            <option value="text">Texto</option>
+                            <option value="link">Enlace</option>
+                            <option value="file">Archivo (PDF, Video, Imagen)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="contentField">
+                        <label for="cardContent" class="form-label">Contenido</label>
+                        <textarea class="form-control" id="cardContent" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3" id="linkField" style="display:none;">
+                        <label for="cardLink" class="form-label">URL del Enlace</label>
+                        <input type="url" class="form-control" id="cardLink">
+                    </div>
+                    <div class="mb-3" id="fileField" style="display:none;">
+                        <label for="cardFile" class="form-label">Archivo</label>
+                        <input type="file" class="form-control" id="cardFile" accept=".pdf,.mp4,.avi,.mov,.jpg,.jpeg,.png,.gif">
+                        <small class="text-muted">Formatos permitidos: PDF, Videos (MP4, AVI, MOV), Imágenes (JPG, PNG, GIF)</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="addCard()">Agregar Tarjeta</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para editar columna (solo admin) -->
+{% if current_user.role == 'admin' %}
+<div class="modal fade" id="editColumnModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil"></i> Editar Columna
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editColumnForm">
+                    <input type="hidden" id="editColumnId">
+                    <div class="mb-3">
+                        <label for="editColumnTitle" class="form-label">Título de la Columna</label>
+                        <input type="text" class="form-control" id="editColumnTitle" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editColumnColor" class="form-label">Color de la Columna</label>
+                        <input type="color" class="form-control" id="editColumnColor">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="updateColumn()">
+                    <i class="bi bi-save"></i> Actualizar Columna
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmación para eliminar columna (solo admin) -->
+<div class="modal fade" id="deleteColumnModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger">
+                    <i class="bi bi-exclamation-triangle"></i> Eliminar Columna
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>¡Atención!</strong> Esta acción no se puede deshacer.
+                </div>
+                <p>¿Estás seguro de que deseas eliminar la columna <strong id="deleteColumnName"></strong>?</p>
+                <p class="text-muted small">
+                    <i class="bi bi-info-circle"></i> 
+                    Todas las tarjetas de esta columna también serán eliminadas permanentemente.
+                </p>
+                <input type="hidden" id="deleteColumnId">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" onclick="deleteColumn()">
+                    <i class="bi bi-trash"></i> Eliminar Columna
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+
+<!-- Modal Universal para Previsualización -->
+<div class="modal fade" id="filePreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="previewModalTitle">Vista Previa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="previewModalBody">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2">Cargando vista previa...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <a id="downloadBtn" class="btn btn-primary" target="_blank">
+                    <i class="bi bi-download"></i> Descargar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Videos de YouTube/Drive -->
+<div class="modal fade" id="videoPreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="videoModalTitle">Video</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="videoModalBody" style="min-height: 500px;">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando video...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <a id="videoLinkBtn" class="btn btn-primary" target="_blank">
+                    <i class="bi bi-box-arrow-up-right"></i> Abrir en Nueva Pestaña
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Función para determinar si un color es claro u oscuro
+function isLightColor(color) {
+    // Convertir hex a RGB
+    let r, g, b;
+    
+    if (color.startsWith('#')) {
+        color = color.slice(1);
+        r = parseInt(color.substr(0, 2), 16);
+        g = parseInt(color.substr(2, 2), 16);
+        b = parseInt(color.substr(4, 2), 16);
+    } else if (color.startsWith('rgb')) {
+        const match = color.match(/\d+/g);
+        r = parseInt(match[0]);
+        g = parseInt(match[1]);
+        b = parseInt(match[2]);
+    } else {
+        return true; // Por defecto, asumir que es claro
+    }
+    
+    // Calcular luminancia usando la fórmula estándar
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    return luminance > 0.5;
+}
+
+// Aplicar colores de texto apropiados a los encabezados de columnas
+document.addEventListener('DOMContentLoaded', function() {
+    const columnHeaders = document.querySelectorAll('.column-header[data-bg-color]');
+    
+    columnHeaders.forEach(header => {
+        const bgColor = header.getAttribute('data-bg-color');
+        if (isLightColor(bgColor)) {
+            header.style.color = '#333';
+            header.style.textShadow = '0 1px 2px rgba(255,255,255,0.8)';
+        } else {
+            header.style.color = '#ffffff';
+            header.style.textShadow = '0 1px 2px rgba(0,0,0,0.8)';
+            header.style.fontWeight = 'bold';
+        }
+    });
+});
+
+// Función para abrir modal de archivo (PDF, video local, imagen)
+function openFileModal(fileUrl, fileType, title) {
+    const modal = document.getElementById('filePreviewModal');
+    const modalTitle = document.getElementById('previewModalTitle');
+    const modalBody = document.getElementById('previewModalBody');
+    const downloadBtn = document.getElementById('downloadBtn');
+    
+    modalTitle.textContent = title;
+    downloadBtn.href = fileUrl;
+    
+    // Mostrar loading
+    modalBody.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2">Cargando vista previa...</p>
+        </div>
+    `;
+    
+    // Abrir modal inmediatamente
+    const bootstrapModal = new bootstrap.Modal(modal);
+    bootstrapModal.show();
+    
+    // Cargar contenido según el tipo
+    setTimeout(() => {
+        if (fileType === 'pdf') {
+            modalBody.innerHTML = `
+                <iframe src="${fileUrl}" 
+                        style="width: 100%; height: 600px; border: none; border-radius: 8px;">
+                </iframe>
+            `;
+        } else if (fileType === 'video') {
+            modalBody.innerHTML = `
+                <video controls style="width: 100%; max-height: 600px; border-radius: 8px;">
+                    <source src="${fileUrl}" type="video/mp4">
+                    Tu navegador no soporta el elemento de video.
+                </video>
+            `;
+        } else if (fileType === 'image') {
+            modalBody.innerHTML = `
+                <img src="${fileUrl}" 
+                     style="width: 100%; height: auto; border-radius: 8px;" 
+                     alt="${title}">
+            `;
+        }
+    }, 300);
+}
+
+// Función para abrir modal de video de YouTube/Drive
+function openVideoModal(videoUrl, title) {
+    const modal = document.getElementById('videoPreviewModal');
+    const modalTitle = document.getElementById('videoModalTitle');
+    const modalBody = document.getElementById('videoModalBody');
+    const linkBtn = document.getElementById('videoLinkBtn');
+    
+    modalTitle.textContent = title;
+    linkBtn.href = videoUrl;
+    
+    // Mostrar loading
+    modalBody.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando video...</span>
+            </div>
+        </div>
+    `;
+    
+    // Abrir modal
+    const bootstrapModal = new bootstrap.Modal(modal);
+    bootstrapModal.show();
+    
+    // Generar embed del video
+    setTimeout(() => {
+        const embedHtml = generateVideoEmbed(videoUrl);
+        modalBody.innerHTML = embedHtml;
+    }, 300);
+}
+
+// Limpiar modales al cerrar
+document.getElementById('filePreviewModal').addEventListener('hidden.bs.modal', function() {
+    document.getElementById('previewModalBody').innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div></div>';
+});
+
+document.getElementById('videoPreviewModal').addEventListener('hidden.bs.modal', function() {
+    document.getElementById('videoModalBody').innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div></div>';
+});
+function showAddColumnModal() {
+    const modal = new bootstrap.Modal(document.getElementById('addColumnModal'));
+    modal.show();
+}
+
+function showAddCardModal(columnId) {
+    document.getElementById('cardColumnId').value = columnId;
+    const modal = new bootstrap.Modal(document.getElementById('addCardModal'));
+    modal.show();
+}
+
+function toggleCardFields() {
+    const cardType = document.getElementById('cardType').value;
+    document.getElementById('contentField').style.display = cardType === 'text' ? 'block' : 'none';
+    document.getElementById('linkField').style.display = cardType === 'link' ? 'block' : 'none';
+    document.getElementById('fileField').style.display = cardType === 'file' ? 'block' : 'none';
+}
+
+function addColumn() {
+    const title = document.getElementById('columnTitle').value;
+    const color = document.getElementById('columnColor').value;
+    
+    if (!title) {
+        alert('Por favor ingresa un título para la columna');
+        return;
+    }
+    
+    fetch('/api/column/create', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            course_id: {{ course.id }},
+            title: title,
+            color: color
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al crear la columna');
+    });
+}
+
+function addCard() {
+    const columnId = document.getElementById('cardColumnId').value;
+    const title = document.getElementById('cardTitle').value;
+    const cardType = document.getElementById('cardType').value;
+    const content = document.getElementById('cardContent').value;
+    const link = document.getElementById('cardLink').value;
+    const fileInput = document.getElementById('cardFile');
+    
+    if (!title) {
+        alert('Por favor ingresa un título para la tarjeta');
+        return;
+    }
+    
+    if (cardType === 'file' && fileInput.files.length > 0) {
+        // Primero crear la tarjeta
+        fetch('/api/card/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                column_id: columnId,
+                title: title,
+                content: content,
+                card_type: 'text'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+            } else {
+                // Subir el archivo
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+                
+                return fetch(`/api/card/${data.id}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error al subir archivo: ' + data.error);
+            } else {
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al crear la tarjeta');
+        });
+    } else {
+        // Crear tarjeta sin archivo
+        const cardData = {
+            column_id: columnId,
+            title: title,
+            content: content,
+            card_type: cardType === 'link' ? 'link' : 'text',
+            link_url: cardType === 'link' ? link : ''
+        };
+        
+        fetch('/api/card/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(cardData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+            } else {
+                location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al crear la tarjeta');
+        });
+    }
+}
+
+// Funciones para gestión de columnas (solo admin)
+function editColumnModal(columnId, title, color) {
+    document.getElementById('editColumnId').value = columnId;
+    document.getElementById('editColumnTitle').value = title;
+    document.getElementById('editColumnColor').value = color;
+    
+    const modal = new bootstrap.Modal(document.getElementById('editColumnModal'));
+    modal.show();
+}
+
+function updateColumn() {
+    const columnId = document.getElementById('editColumnId').value;
+    const title = document.getElementById('editColumnTitle').value;
+    const color = document.getElementById('editColumnColor').value;
+    
+    if (!title.trim()) {
+        alert('Por favor ingresa un título para la columna');
+        return;
+    }
+    
+    fetch(`/api/column/${columnId}/edit`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            title: title,
+            color: color
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'No se pudo actualizar la columna'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al actualizar la columna');
+    });
+}
+
+function confirmDeleteColumn(columnId, title) {
+    document.getElementById('deleteColumnId').value = columnId;
+    document.getElementById('deleteColumnName').textContent = title;
+    
+    const modal = new bootstrap.Modal(document.getElementById('deleteColumnModal'));
+    modal.show();
+}
+
+function deleteColumn() {
+    const columnId = document.getElementById('deleteColumnId').value;
+    
+    fetch(`/api/column/${columnId}/delete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'No se pudo eliminar la columna'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al eliminar la columna');
+    });
+}
+</script>
+{% endblock %}

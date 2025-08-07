@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}Mi Perfil - Aula Virtual{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-4">
+            <!-- Tarjeta de Perfil -->
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <div class="avatar-circle mb-3">
+                        <i class="bi bi-person-circle display-1 text-primary"></i>
+                    </div>
+                    <h4>{{ current_user.full_name or current_user.username }}</h4>
+                    <p class="text-muted">@{{ current_user.username }}</p>
+                    <span class="badge bg-{{ 'danger' if current_user.role == 'admin' else 'info' if current_user.role == 'teacher' else 'success' }} mb-3">
+                        {{ 'Administrador' if current_user.role == 'admin' else 'Docente' if current_user.role == 'teacher' else 'Estudiante' }}
+                    </span>
+                    
+                    <hr>
+                    
+                    <div class="text-start">
+                        <p><i class="bi bi-envelope"></i> {{ current_user.email }}</p>
+                        <p><i class="bi bi-calendar"></i> Miembro desde: {{ current_user.created_at.strftime('%d/%m/%Y') }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <!-- Estadísticas -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-graph-up"></i> Estadísticas</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        {% if current_user.role == 'student' %}
+                        <div class="col-md-4">
+                            <div class="stat-box">
+                                <h3 class="text-primary">{{ enrollments|length }}</h3>
+                                <p class="text-muted">Cursos Inscritos</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-box">
+                                <h3 class="text-success">
+                                    {% set completed = enrollments|selectattr('progress', 'equalto', 100)|list|length %}
+                                    {{ completed }}
+                                </h3>
+                                <p class="text-muted">Cursos Completados</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-box">
+                                <h3 class="text-info">
+                                    {% if enrollments %}
+                                        {{ "%.1f"|format(enrollments|map(attribute='progress')|sum / enrollments|length) }}%
+                                    {% else %}
+                                        0%
+                                    {% endif %}
+                                </h3>
+                                <p class="text-muted">Progreso Promedio</p>
+                            </div>
+                        </div>
+                        {% elif current_user.role == 'teacher' %}
+                        <div class="col-md-4">
+                            <div class="stat-box">
+                                <h3 class="text-primary">{{ teaching_courses|length }}</h3>
+                                <p class="text-muted">Cursos Creados</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-box">
+                                <h3 class="text-success">
+                                    {% set total_students = teaching_courses|map(attribute='enrollments')|map('length')|sum %}
+                                    {{ total_students }}
+                                </h3>
+                                <p class="text-muted">Total Estudiantes</p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-box">
+                                <h3 class="text-info">
+                                    {{ teaching_courses|selectattr('status', 'equalto', 'active')|list|length }}
+                                </h3>
+                                <p class="text-muted">Cursos Activos</p>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="col-md-12">
+                            <p class="text-center">Eres administrador del sistema</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Actividad Reciente -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock-history"></i> 
+                        {% if current_user.role == 'student' %}
+                            Mis Cursos Inscritos
+                        {% elif current_user.role == 'teacher' %}
+                            Mis Cursos como Docente
+                        {% else %}
+                            Panel de Administración
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if current_user.role == 'student' %}
+                        {% if enrollments %}
+                        <div class="list-group">
+                            {% for enrollment in enrollments %}
+                            <a href="{{ url_for('course_detail', course_id=enrollment.course.id) }}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ enrollment.course.name }}</h6>
+                                    <small>{{ enrollment.enrolled_at.strftime('%d/%m/%Y') }}</small>
+                                </div>
+                                <div class="progress" style="height: 5px;">
+                                    <div class="progress-bar" role="progressbar" style="width: {{ enrollment.progress }}%"></div>
+                                </div>
+                                <small>Progreso: {{ enrollment.progress }}%</small>
+                            </a>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-center text-muted">No estás inscrito en ningún curso aún.</p>
+                        <div class="text-center">
+                            <a href="{{ url_for('courses') }}" class="btn btn-primary">
+                                <i class="bi bi-search"></i> Explorar Cursos
+                            </a>
+                        </div>
+                        {% endif %}
+                    {% elif current_user.role == 'teacher' %}
+                        {% if teaching_courses %}
+                        <div class="list-group">
+                            {% for course in teaching_courses %}
+                            <a href="{{ url_for('course_detail', course_id=course.id) }}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ course.name }}</h6>
+                                    <span class="badge bg-{{ 'success' if course.status == 'active' else 'secondary' }}">
+                                        {{ 'Activo' if course.status == 'active' else 'Archivado' }}
+                                    </span>
+                                </div>
+                                <p class="mb-1">{{ course.enrollments|length }} estudiantes inscritos</p>
+                                <small>Creado: {{ course.created_at.strftime('%d/%m/%Y') }}</small>
+                            </a>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-center text-muted">No has creado ningún curso aún.</p>
+                        <div class="text-center">
+                            <a href="{{ url_for('create_course') }}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Crear Curso
+                            </a>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center">
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+                                <i class="bi bi-speedometer2"></i> Ir al Dashboard
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.stat-box {
+    padding: 20px;
+    border-radius: 10px;
+    background: #f8f9fa;
+    margin-bottom: 20px;
+}
+
+.stat-box h3 {
+    margin-bottom: 5px;
+}
+
+.avatar-circle {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto;
+}
+</style>
+{% endblock %}

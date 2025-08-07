@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Usuario - Aula Virtual{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard Admin</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_users') }}">Gestión de Usuarios</a></li>
+                    <li class="breadcrumb-item active">Editar Usuario</li>
+                </ol>
+            </nav>
+            
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="bi bi-person-gear"></i> Editar Usuario: {{ user.username }}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="full_name" class="form-label">Nombre Completo</label>
+                                    <input type="text" class="form-control" id="full_name" name="full_name" 
+                                           value="{{ user.full_name or '' }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">Nombre de Usuario</label>
+                                    <input type="text" class="form-control" id="username" name="username" 
+                                           value="{{ user.username }}" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="email" class="form-label">Correo Electrónico</label>
+                                    <input type="email" class="form-control" id="email" name="email" 
+                                           value="{{ user.email }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="role" class="form-label">Rol de Usuario</label>
+                                    <select class="form-select" id="role" name="role" required>
+                                        <option value="student" {{ 'selected' if user.role == 'student' else '' }}>Estudiante</option>
+                                        <option value="teacher" {{ 'selected' if user.role == 'teacher' else '' }}>Docente</option>
+                                        <option value="admin" {{ 'selected' if user.role == 'admin' else '' }}>Administrador</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Nueva Contraseña (opcional)</label>
+                            <input type="password" class="form-control" id="password" name="password" 
+                                   placeholder="Dejar en blanco para mantener la contraseña actual">
+                            <small class="form-text text-muted">
+                                Solo completa este campo si deseas cambiar la contraseña del usuario.
+                            </small>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Información Actual</h6>
+                                        <p class="card-text small">
+                                            <strong>Creado:</strong> {{ user.created_at.strftime('%d/%m/%Y') if user.created_at else 'N/A' }}<br>
+                                            <strong>ID:</strong> {{ user.id }}<br>
+                                            <strong>Estado:</strong> <span class="badge bg-success">Activo</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Actividad</h6>
+                                        <p class="card-text small">
+                                            {% if user.role == 'student' %}
+                                            <strong>Inscripciones:</strong> {{ user.enrollment_requests|length }}<br>
+                                            <strong>Solicitudes:</strong> {{ user.enrollment_requests|length }}
+                                            {% elif user.role == 'teacher' %}
+                                            <strong>Cursos:</strong> {{ user.teaching_courses|length }}<br>
+                                            <strong>Materiales:</strong> {{ user.materials|length }}
+                                            {% else %}
+                                            <strong>Rol:</strong> Administrador del Sistema
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr class="my-4">
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('admin_users') }}" class="btn btn-outline-secondary me-md-2">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Confirmar cambios importantes
+document.querySelector('form').addEventListener('submit', function(e) {
+    const currentRole = '{{ user.role }}';
+    const newRole = document.getElementById('role').value;
+    
+    if (currentRole !== newRole) {
+        if (!confirm(`¿Estás seguro de cambiar el rol de "${currentRole}" a "${newRole}"? Esto puede afectar los permisos del usuario.`)) {
+            e.preventDefault();
+        }
+    }
+});
+</script>
+{% endblock %}

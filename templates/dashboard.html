@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Aula Virtual{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">
+                <i class="bi bi-speedometer2"></i> Mi Dashboard
+                {% if is_teacher %}
+                <span class="badge bg-info">Docente</span>
+                {% else %}
+                <span class="badge bg-success">Estudiante</span>
+                {% endif %}
+            </h1>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        {% if is_teacher %}
+                        <i class="bi bi-book"></i> Mis Cursos como Docente
+                        {% else %}
+                        <i class="bi bi-backpack"></i> Mis Cursos Inscritos
+                        {% endif %}
+                    </h5>
+                    {% if is_teacher %}
+                    <a href="{{ url_for('create_course') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Crear Nuevo Curso
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('courses') }}" class="btn btn-primary">
+                        <i class="bi bi-search"></i> Explorar Cursos
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grid de Cursos estilo Padlet -->
+    <div class="course-grid">
+        {% if courses %}
+            {% for course in courses %}
+            <div class="course-card">
+                <div class="card h-100 shadow-sm hover-shadow">
+                    {% if course.image_url %}
+                    <div class="position-relative">
+                        <img src="{{ course.image_url }}" class="card-img-top" style="height: 180px; object-fit: cover;" alt="{{ course.name }}">
+                        <div class="position-absolute bottom-0 start-0 w-100 p-3" style="background: linear-gradient(transparent, rgba(0,0,0,0.7));">
+                            <h5 class="text-white mb-0 fw-bold">{{ course.name }}</h5>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="card-header bg-gradient" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);">
+                        <h5 class="mb-0 fw-bold" style="color: #1e40af !important;">{{ course.name }}</h5>
+                    </div>
+                    {% endif %}
+                    <div class="card-body">
+                        <p class="card-text">{{ course.description[:150] }}{% if course.description|length > 150 %}...{% endif %}</p>
+                        
+                        <div class="mb-3">
+                            <small class="text-muted">
+                                <i class="bi bi-person-check"></i> 
+                                {% if course.teacher %}
+                                Docente: {{ course.teacher.full_name or course.teacher.username }}
+                                {% endif %}
+                            </small>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <a href="{{ url_for('course_detail', course_id=course.id) }}" class="btn btn-primary">
+                                <i class="bi bi-box-arrow-in-right"></i> Entrar al Curso
+                            </a>
+                            <a href="{{ url_for('course_materials', course_id=course.id) }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-folder"></i> Ver Materiales
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-footer text-muted">
+                        <small>
+                            <i class="bi bi-calendar"></i> 
+                            Creado: {{ course.created_at.strftime('%d/%m/%Y') if course.created_at else 'N/A' }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <h4 class="alert-heading">
+                        <i class="bi bi-info-circle"></i> No tienes cursos aún
+                    </h4>
+                    <p>
+                        {% if is_teacher %}
+                        Como docente, puedes crear nuevos cursos y gestionar el contenido educativo.
+                        {% else %}
+                        Explora los cursos disponibles e inscríbete en los que te interesen.
+                        {% endif %}
+                    </p>
+                    <hr>
+                    <p class="mb-0">
+                        {% if is_teacher %}
+                        <a href="{{ url_for('create_course') }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Crear mi primer curso
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('courses') }}" class="btn btn-primary">
+                            <i class="bi bi-search"></i> Explorar cursos disponibles
+                        </a>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Sección para estudiantes: Mis Solicitudes -->
+    {% if not is_teacher and my_requests %}
+    <div class="row mt-5">
+        <div class="col-12">
+            <h3 class="mb-4">
+                <i class="bi bi-clock-history"></i> Mis Solicitudes de Inscripción
+            </h3>
+            <div class="row g-3">
+                {% for request in my_requests %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-{{ 'warning' if request.status == 'pending' else 'success' if request.status == 'approved' else 'danger' }}">
+                        <div class="card-header bg-{{ 'warning' if request.status == 'pending' else 'success' if request.status == 'approved' else 'danger' }} text-white">
+                            <h6 class="mb-0 fw-bold">
+                                <i class="bi bi-{{ 'clock' if request.status == 'pending' else 'check-circle' if request.status == 'approved' else 'x-circle' }}"></i>
+                                {{ 'Pendiente' if request.status == 'pending' else 'Aprobada' if request.status == 'approved' else 'Rechazada' }}
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-title">{{ request.course.name }}</h6>
+                            <p class="card-text small text-muted">
+                                Solicitado: {{ request.requested_at.strftime('%d/%m/%Y') }}
+                            </p>
+                            
+                            {% if request.status != 'pending' %}
+                            <p class="card-text small">
+                                <strong>Procesado:</strong> {{ request.processed_at.strftime('%d/%m/%Y') if request.processed_at else 'N/A' }}
+                            </p>
+                            {% if request.admin_message %}
+                            <div class="alert alert-{{ 'success' if request.status == 'approved' else 'warning' }} p-2">
+                                <small><strong>Mensaje del admin:</strong> {{ request.admin_message }}</small>
+                            </div>
+                            {% endif %}
+                            {% endif %}
+                            
+                            {% if request.status == 'approved' %}
+                            <a href="{{ url_for('course_detail', course_id=request.course.id) }}" class="btn btn-success btn-sm">
+                                <i class="bi bi-box-arrow-in-right"></i> Entrar al Curso
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.course-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 20px 0;
+}
+
+.course-card {
+    transition: transform 0.3s ease;
+}
+
+.course-card:hover {
+    transform: translateY(-5px);
+}
+
+.hover-shadow:hover {
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;
+}
+
+.bg-gradient {
+    color: white;
+}
+
+.card-header.bg-gradient h5 {
+    color: #1e40af !important;
+    font-weight: bold;
+}
+
+.card-header.bg-warning h6,
+.card-header.bg-success h6,
+.card-header.bg-danger h6 {
+    color: white !important;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio - Aula Virtual Diplomados{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- Hero Section -->
+    <div class="hero-section text-white text-center py-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="container">
+            <h1 class="display-4 fw-bold mb-4">
+                <i class="bi bi-mortarboard-fill"></i> Aula Virtual
+            </h1>
+            <p class="lead mb-4">
+                Plataforma educativa moderna con dashboard tipo Padlet para una experiencia de aprendizaje interactiva
+            </p>
+            {% if not current_user.is_authenticated %}
+            <div class="d-flex justify-content-center gap-3">
+                <a href="{{ url_for('register') }}" class="btn btn-light btn-lg">
+                    <i class="bi bi-person-plus"></i> Registrarse
+                </a>
+                <a href="{{ url_for('login') }}" class="btn btn-outline-light btn-lg">
+                    <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                </a>
+            </div>
+            {% else %}
+            <a href="{{ url_for('dashboard') }}" class="btn btn-light btn-lg">
+                <i class="bi bi-speedometer2"></i> Ir al Dashboard
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="container py-5">
+        <h2 class="text-center mb-5">Características Principales</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="feature-icon mb-3">
+                            <i class="bi bi-columns-gap display-4 text-primary"></i>
+                        </div>
+                        <h4>Dashboard Tipo Padlet</h4>
+                        <p>Organiza el contenido del curso en columnas visuales e interactivas para una mejor experiencia de aprendizaje.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="feature-icon mb-3">
+                            <i class="bi bi-people-fill display-4 text-success"></i>
+                        </div>
+                        <h4>Tres Tipos de Usuarios</h4>
+                        <p>Sistema completo con roles de Administrador, Docente y Estudiante, cada uno con permisos específicos.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="feature-icon mb-3">
+                            <i class="bi bi-file-earmark-richtext display-4 text-info"></i>
+                        </div>
+                        <h4>Contenido Multimedia</h4>
+                        <p>Sube y visualiza videos, PDFs, imágenes y enlaces. Previsualización integrada de todos los materiales.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- How It Works -->
+    <div class="bg-light py-5">
+        <div class="container">
+            <h2 class="text-center mb-5">¿Cómo Funciona?</h2>
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-3">
+                    <div class="text-center">
+                        <div class="step-number">1</div>
+                        <h5>Regístrate</h5>
+                        <p>Crea tu cuenta como Estudiante o Docente</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="text-center">
+                        <div class="step-number">2</div>
+                        <h5>Explora Cursos</h5>
+                        <p>Navega por los diplomados disponibles</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="text-center">
+                        <div class="step-number">3</div>
+                        <h5>Inscríbete</h5>
+                        <p>Únete a los cursos de tu interés</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="text-center">
+                        <div class="step-number">4</div>
+                        <h5>Aprende</h5>
+                        <p>Accede al contenido interactivo del curso</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Types -->
+    <div class="container py-5">
+        <h2 class="text-center mb-5">Tipos de Usuario</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-shield-lock"></i> Administrador</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled">
+                            <li><i class="bi bi-check-circle text-success"></i> Gestión completa de usuarios</li>
+                            <li><i class="bi bi-check-circle text-success"></i> Crear y administrar todos los cursos</li>
+                            <li><i class="bi bi-check-circle text-success"></i> Acceso total al sistema</li>
+                            <li><i class="bi bi-check-circle text-success"></i> Reportes y estadísticas</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card border-info">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-person-workspace"></i> Docente</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled">
+                            <li><i class="bi bi-check-circle text-success"></i> Crear y gestionar sus cursos</li>
+                            <li><i class="bi bi-check-circle text-success"></i> Subir materiales multimedia</li>
+                            <li><i class="bi bi-check-circle text-success"></i> Organizar contenido en columnas</li>
+                            <li><i class="bi bi-check-circle text-success"></i> Interactuar con estudiantes</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card border-success">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-person"></i> Estudiante</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled">
+                            <li><i class="bi bi-check-circle text-success"></i> Inscribirse en cursos</li>
+                            <li><i class="bi bi-check-circle text-success"></i> Acceder a materiales del curso</li>
+                            <li><i class="bi bi-check-circle text-success"></i> Ver contenido multimedia</li>
+                            <li><i class="bi bi-check-circle text-success"></i> Seguir su progreso</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.hero-section {
+    min-height: 400px;
+    display: flex;
+    align-items: center;
+}
+
+.feature-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.step-number {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 0 auto 1rem;
+}
+</style>
+{% endblock %}

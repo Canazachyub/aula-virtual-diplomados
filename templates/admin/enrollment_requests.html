@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Solicitudes - Aula Virtual{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard Admin</a></li>
+                    <li class="breadcrumb-item active">Solicitudes de Inscripción</li>
+                </ol>
+            </nav>
+            
+            <h1 class="mb-4">
+                <i class="bi bi-person-check"></i> Gestión de Solicitudes de Inscripción
+            </h1>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h6>Pendientes</h6>
+                    <h3>{{ requests|selectattr('status', 'equalto', 'pending')|list|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h6>Aprobadas</h6>
+                    <h3>{{ requests|selectattr('status', 'equalto', 'approved')|list|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h6>Rechazadas</h6>
+                    <h3>{{ requests|selectattr('status', 'equalto', 'rejected')|list|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h6>Total</h6>
+                    <h3>{{ requests|length }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <input type="text" class="form-control" id="searchRequest" placeholder="Buscar por estudiante o curso...">
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="filterStatus">
+                                <option value="">Todos los estados</option>
+                                <option value="pending">Pendientes</option>
+                                <option value="approved">Aprobadas</option>
+                                <option value="rejected">Rechazadas</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-outline-primary w-100" onclick="filterRequests()">
+                                <i class="bi bi-funnel"></i> Filtrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Solicitudes -->
+    <div class="row">
+        <div class="col-12">
+            {% if requests %}
+            <div class="row g-4" id="requestsContainer">
+                {% for request in requests %}
+                <div class="col-md-6 col-lg-4 request-card" 
+                     data-student="{{ request.user.username.lower() }}" 
+                     data-course="{{ request.course.name.lower() }}"
+                     data-status="{{ request.status }}">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-header bg-{{ 'warning' if request.status == 'pending' else 'success' if request.status == 'approved' else 'danger' }} text-white">
+                            <h6 class="mb-0">
+                                <i class="bi bi-{{ 'clock' if request.status == 'pending' else 'check-circle' if request.status == 'approved' else 'x-circle' }}"></i>
+                                {{ 'Pendiente' if request.status == 'pending' else 'Aprobada' if request.status == 'approved' else 'Rechazada' }}
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">{{ request.user.full_name or request.user.username }}</h5>
+                            <h6 class="text-muted mb-3">{{ request.course.name }}</h6>
+                            
+                            <div class="mb-3">
+                                <small class="text-muted">
+                                    <i class="bi bi-calendar"></i> Solicitado: {{ request.requested_at.strftime('%d/%m/%Y %H:%M') }}
+                                </small>
+                                {% if request.whatsapp_number %}
+                                <br>
+                                <small class="text-success">
+                                    <i class="bi bi-whatsapp"></i> WhatsApp: 
+                                    <a href="https://wa.me/{{ request.whatsapp_number.replace(' ', '').replace('-', '').replace('(', '').replace(')', '') }}" 
+                                       target="_blank" class="text-success">
+                                        {{ request.whatsapp_number }}
+                                    </a>
+                                </small>
+                                {% endif %}
+                            </div>
+                            
+                            {% if request.voucher_file %}
+                            <div class="mb-3">
+                                <strong>Comprobante de Pago:</strong>
+                                <div class="mt-2">
+                                    <a href="{{ request.voucher_file }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-receipt"></i> Ver Voucher
+                                    </a>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if request.message %}
+                            <div class="mb-3">
+                                <strong>Mensaje del estudiante:</strong>
+                                <p class="text-muted small">{{ request.message[:100] }}{% if request.message|length > 100 %}...{% endif %}</p>
+                            </div>
+                            {% endif %}
+                            
+                            {% if request.status != 'pending' %}
+                            <div class="mb-3">
+                                <small class="text-muted">
+                                    <i class="bi bi-person"></i> Procesado por: {{ request.processed_by.username if request.processed_by else 'N/A' }}<br>
+                                    <i class="bi bi-calendar"></i> Fecha: {{ request.processed_at.strftime('%d/%m/%Y %H:%M') if request.processed_at else 'N/A' }}
+                                </small>
+                                {% if request.admin_message %}
+                                <p class="small mt-2"><strong>Mensaje del admin:</strong> {{ request.admin_message }}</p>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        {% if request.status == 'pending' %}
+                        <div class="card-footer bg-transparent">
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-success btn-sm flex-fill" onclick="showProcessModal({{ request.id }}, 'approve', '{{ request.user.username }}', '{{ request.course.name }}')">
+                                    <i class="bi bi-check"></i> Aprobar
+                                </button>
+                                <button class="btn btn-danger btn-sm flex-fill" onclick="showProcessModal({{ request.id }}, 'reject', '{{ request.user.username }}', '{{ request.course.name }}')">
+                                    <i class="bi bi-x"></i> Rechazar
+                                </button>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="alert alert-info text-center">
+                <h4><i class="bi bi-info-circle"></i> No hay solicitudes</h4>
+                <p>Aún no se han recibido solicitudes de inscripción.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal para procesar solicitud -->
+<div class="modal fade" id="processModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="processModalTitle">Procesar Solicitud</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="processForm">
+                <div class="modal-body">
+                    <input type="hidden" id="processAction" name="action">
+                    <div class="mb-3">
+                        <p id="processMessage"></p>
+                    </div>
+                    <div class="mb-3">
+                        <label for="admin_message" class="form-label">Mensaje para el estudiante (opcional)</label>
+                        <textarea class="form-control" id="admin_message" name="admin_message" rows="3" 
+                                  placeholder="Mensaje adicional para el estudiante..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn" id="processSubmitBtn">Procesar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterRequests() {
+    const searchTerm = document.getElementById('searchRequest').value.toLowerCase();
+    const statusFilter = document.getElementById('filterStatus').value;
+    const requestCards = document.querySelectorAll('.request-card');
+    
+    requestCards.forEach(card => {
+        const student = card.getAttribute('data-student');
+        const course = card.getAttribute('data-course');
+        const status = card.getAttribute('data-status');
+        
+        let showCard = true;
+        
+        // Filtro por búsqueda
+        if (searchTerm && !student.includes(searchTerm) && !course.includes(searchTerm)) {
+            showCard = false;
+        }
+        
+        // Filtro por estado
+        if (statusFilter && status !== statusFilter) {
+            showCard = false;
+        }
+        
+        card.style.display = showCard ? 'block' : 'none';
+    });
+}
+
+function showProcessModal(requestId, action, studentName, courseName) {
+    const modal = document.getElementById('processModal');
+    const form = document.getElementById('processForm');
+    const title = document.getElementById('processModalTitle');
+    const message = document.getElementById('processMessage');
+    const actionInput = document.getElementById('processAction');
+    const submitBtn = document.getElementById('processSubmitBtn');
+    
+    form.action = `/admin/process-request/${requestId}`;
+    actionInput.value = action;
+    
+    if (action === 'approve') {
+        title.textContent = 'Aprobar Solicitud';
+        message.innerHTML = `<strong>¿Aprobar la solicitud de ${studentName} para el curso "${courseName}"?</strong>`;
+        submitBtn.textContent = 'Aprobar';
+        submitBtn.className = 'btn btn-success';
+    } else {
+        title.textContent = 'Rechazar Solicitud';
+        message.innerHTML = `<strong>¿Rechazar la solicitud de ${studentName} para el curso "${courseName}"?</strong>`;
+        submitBtn.textContent = 'Rechazar';
+        submitBtn.className = 'btn btn-danger';
+    }
+    
+    const bootstrapModal = new bootstrap.Modal(modal);
+    bootstrapModal.show();
+}
+
+// Búsqueda en tiempo real
+document.getElementById('searchRequest').addEventListener('keyup', filterRequests);
+</script>
+{% endblock %}

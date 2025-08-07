@@ -1,0 +1,434 @@
+{% extends "base.html" %}
+
+{% block title %}Gestionar Horarios - {{ course.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('course_materials', course_id=course.id) }}">Materiales</a></li>
+                    <li class="breadcrumb-item active">Gestionar Horarios</li>
+                </ol>
+            </nav>
+            
+            <h1 class="mb-4">
+                <i class="bi bi-calendar-week"></i> Gestionar Horarios de Clases
+            </h1>
+            <h5 class="text-muted mb-4">Curso: {{ course.name }}</h5>
+            
+            <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#addScheduleModal">
+                <i class="bi bi-plus-circle"></i> Agregar Horario
+            </button>
+            
+            <a href="{{ url_for('course_materials', course_id=course.id) }}" class="btn btn-outline-secondary mb-3">
+                <i class="bi bi-arrow-left"></i> Volver a Materiales
+            </a>
+        </div>
+    </div>
+
+    <!-- Tabla de Horarios Configurados -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-table"></i> Horarios Configurados
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if schedules %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Día</th>
+                                    <th>Horario</th>
+                                    <th>Tipo</th>
+                                    <th>Link Permanente</th>
+                                    <th>Link Diario</th>
+                                    <th>Notas</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% set days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'] %}
+                                {% for schedule in schedules %}
+                                <tr>
+                                    <td>
+                                        <strong class="{% if schedule.day_of_week == 5 %}text-warning{% else %}text-primary{% endif %}">
+                                            {{ days[schedule.day_of_week] }}
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        {{ schedule.start_time.strftime('%H:%M') }} - {{ schedule.end_time.strftime('%H:%M') }}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{% if schedule.class_type == 'maraton' %}warning{% elif schedule.class_type == 'simulacro' %}danger{% else %}primary{% endif %}">
+                                            {{ schedule.class_type|title }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if schedule.meeting_link %}
+                                        <div class="d-flex align-items-center">
+                                            <small class="text-truncate me-2" style="max-width: 150px;">{{ schedule.meeting_link }}</small>
+                                            <a href="{{ schedule.meeting_link }}" target="_blank" class="btn btn-sm btn-outline-success">
+                                                <i class="bi bi-box-arrow-up-right"></i>
+                                            </a>
+                                        </div>
+                                        {% else %}
+                                        <span class="text-muted">No configurado</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if schedule.daily_link %}
+                                        <div class="d-flex align-items-center">
+                                            <small class="text-truncate me-2" style="max-width: 150px;">{{ schedule.daily_link }}</small>
+                                            <a href="{{ schedule.daily_link }}" target="_blank" class="btn btn-sm btn-outline-success">
+                                                <i class="bi bi-box-arrow-up-right"></i>
+                                            </a>
+                                        </div>
+                                        <small class="text-muted">Actualizado: {{ schedule.updated_at.strftime('%d/%m %H:%M') }}</small>
+                                        {% else %}
+                                        <button class="btn btn-sm btn-outline-primary" onclick="quickUpdateLink({{ schedule.id }}, '{{ days[schedule.day_of_week] }}', '{{ schedule.start_time.strftime('%H:%M') }}')">
+                                            <i class="bi bi-plus"></i> Agregar
+                                        </button>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ schedule.notes or 'Sin notas' }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="editSchedule({{ schedule.id }})" 
+                                                    title="Editar horario">
+                                                <i class="bi bi-pencil"></i> Editar
+                                            </button>
+                                            <form method="POST" action="{{ url_for('delete_schedule', schedule_id=schedule.id) }}" 
+                                                  style="display: inline;" onsubmit="return confirm('¿Eliminar este horario?')">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar horario">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted mt-3">No hay horarios configurados</h5>
+                        <p class="text-muted">Comienza agregando el primer horario de clases.</p>
+                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addScheduleModal">
+                            <i class="bi bi-plus-circle"></i> Agregar Primer Horario
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para agregar horario -->
+<div class="modal fade" id="addScheduleModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-circle"></i> Agregar Nuevo Horario
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('create_schedule', course_id=course.id) }}">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="day_of_week" class="form-label">Día de la Semana</label>
+                                <select class="form-select" id="day_of_week" name="day_of_week" required>
+                                    <option value="0">Lunes</option>
+                                    <option value="1">Martes</option>
+                                    <option value="2">Miércoles</option>
+                                    <option value="3">Jueves</option>
+                                    <option value="4">Viernes</option>
+                                    <option value="5">Sábado (Maratones/Simulacros)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="class_type" class="form-label">Tipo de Clase</label>
+                                <select class="form-select" id="class_type" name="class_type" required>
+                                    <option value="regular">Clase Regular</option>
+                                    <option value="maraton">Maratón</option>
+                                    <option value="simulacro">Simulacro</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="start_time" class="form-label">Hora de Inicio</label>
+                                <input type="time" class="form-control" id="start_time" name="start_time" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="end_time" class="form-label">Hora de Fin</label>
+                                <input type="time" class="form-control" id="end_time" name="end_time" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="meeting_link" class="form-label">Link Permanente (Google Meet/Zoom)</label>
+                        <input type="url" class="form-control" id="meeting_link" name="meeting_link" 
+                               placeholder="https://meet.google.com/xxx-xxxx-xxx">
+                        <small class="text-muted">Este link se usará por defecto para todas las clases de este horario.</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notas Adicionales</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="2" 
+                                  placeholder="Ej: Clase de repaso, material especial requerido, etc."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-save"></i> Crear Horario
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para actualización rápida de link -->
+<div class="modal fade" id="quickUpdateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-link"></i> Agregar Link de Clase
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="quickUpdateForm">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong id="quickClassInfo">Clase de Lunes 08:00</strong>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="quick_daily_link" class="form-label">Link de la Clase</label>
+                        <input type="url" class="form-control" id="quick_daily_link" name="daily_link" required
+                               placeholder="https://meet.google.com/xxx-xxxx-xxx">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para editar horario -->
+<div class="modal fade" id="editScheduleModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil"></i> Editar Horario
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="editScheduleForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_day_of_week" class="form-label">Día de la Semana</label>
+                                <select class="form-select" id="edit_day_of_week" name="day_of_week" required>
+                                    <option value="0">Lunes</option>
+                                    <option value="1">Martes</option>
+                                    <option value="2">Miércoles</option>
+                                    <option value="3">Jueves</option>
+                                    <option value="4">Viernes</option>
+                                    <option value="5">Sábado (Maratones/Simulacros)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_class_type" class="form-label">Tipo de Clase</label>
+                                <select class="form-select" id="edit_class_type" name="class_type" required>
+                                    <option value="regular">Clase Regular</option>
+                                    <option value="maraton">Maratón</option>
+                                    <option value="simulacro">Simulacro</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_start_time" class="form-label">Hora de Inicio</label>
+                                <input type="time" class="form-control" id="edit_start_time" name="start_time" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_end_time" class="form-label">Hora de Fin</label>
+                                <input type="time" class="form-control" id="edit_end_time" name="end_time" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_meeting_link" class="form-label">Link Permanente (Google Meet/Zoom)</label>
+                        <input type="url" class="form-control" id="edit_meeting_link" name="meeting_link" 
+                               placeholder="https://meet.google.com/xxx-xxxx-xxx">
+                        <small class="text-muted">Este link se usará por defecto para todas las clases de este horario.</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_notes" class="form-label">Notas Adicionales</label>
+                        <textarea class="form-control" id="edit_notes" name="notes" rows="2" 
+                                  placeholder="Ej: Clase de repaso, material especial requerido, etc."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Actualizar Horario
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let quickScheduleId = null;
+
+function quickUpdateLink(scheduleId, day, time) {
+    quickScheduleId = scheduleId;
+    document.getElementById('quickClassInfo').textContent = `Clase de ${day} ${time}`;
+    document.getElementById('quick_daily_link').value = '';
+    
+    const modal = new bootstrap.Modal(document.getElementById('quickUpdateModal'));
+    modal.show();
+}
+
+// Manejar la actualización rápida
+document.getElementById('quickUpdateForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const dailyLink = document.getElementById('quick_daily_link').value;
+    
+    const formData = new FormData();
+    formData.append('daily_link', dailyLink);
+    
+    fetch(`/schedule/${quickScheduleId}/update_daily_link`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al actualizar el link');
+    });
+});
+
+// Actualizar el tipo de clase basado en el día seleccionado
+document.getElementById('day_of_week').addEventListener('change', function() {
+    const classTypeSelect = document.getElementById('class_type');
+    if (this.value === '5') { // Sábado
+        classTypeSelect.innerHTML = `
+            <option value="maraton">Maratón</option>
+            <option value="simulacro">Simulacro</option>
+        `;
+    } else {
+        classTypeSelect.innerHTML = `
+            <option value="regular">Clase Regular</option>
+            <option value="maraton">Maratón</option>
+            <option value="simulacro">Simulacro</option>
+        `;
+    }
+});
+
+// Función para editar horario
+function editSchedule(scheduleId) {
+    // Cargar los datos del horario
+    fetch(`/schedule/${scheduleId}/edit`)
+    .then(response => response.json())
+    .then(data => {
+        // Rellenar el formulario con los datos existentes
+        document.getElementById('edit_day_of_week').value = data.day_of_week;
+        document.getElementById('edit_class_type').value = data.class_type;
+        document.getElementById('edit_start_time').value = data.start_time;
+        document.getElementById('edit_end_time').value = data.end_time;
+        document.getElementById('edit_meeting_link').value = data.meeting_link;
+        document.getElementById('edit_notes').value = data.notes;
+        
+        // Configurar el formulario para enviar a la URL correcta
+        document.getElementById('editScheduleForm').action = `/schedule/${scheduleId}/edit`;
+        
+        // Actualizar las opciones de tipo de clase según el día
+        updateEditClassTypeOptions(data.day_of_week);
+        
+        // Mostrar el modal
+        const modal = new bootstrap.Modal(document.getElementById('editScheduleModal'));
+        modal.show();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al cargar los datos del horario');
+    });
+}
+
+// Función para actualizar las opciones de tipo de clase en el modal de edición
+function updateEditClassTypeOptions(dayOfWeek) {
+    const classTypeSelect = document.getElementById('edit_class_type');
+    if (dayOfWeek === 5) { // Sábado
+        classTypeSelect.innerHTML = `
+            <option value="maraton">Maratón</option>
+            <option value="simulacro">Simulacro</option>
+        `;
+    } else {
+        classTypeSelect.innerHTML = `
+            <option value="regular">Clase Regular</option>
+            <option value="maraton">Maratón</option>
+            <option value="simulacro">Simulacro</option>
+        `;
+    }
+}
+
+// Actualizar el tipo de clase basado en el día seleccionado en el modal de edición
+document.getElementById('edit_day_of_week').addEventListener('change', function() {
+    updateEditClassTypeOptions(parseInt(this.value));
+});
+</script>
+{% endblock %}

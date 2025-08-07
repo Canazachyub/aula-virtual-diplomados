@@ -1,0 +1,439 @@
+{% extends "base.html" %}
+
+{% block title %}Materiales - {{ course.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('course_detail', course_id=course.id) }}">{{ course.name }}</a></li>
+                    <li class="breadcrumb-item active">Materiales</li>
+                </ol>
+            </nav>
+            
+            <h1 class="mb-4">
+                <i class="bi bi-folder"></i> Materiales del Curso
+            </h1>
+            
+            <div class="btn-group mb-3" role="group">
+                {% if current_user.role in ['admin', 'teacher'] %}
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadMaterialModal">
+                    <i class="bi bi-cloud-upload"></i> Subir Material
+                </button>
+                {% endif %}
+                
+                {% if current_user.role == 'admin' %}
+                <a href="{{ url_for('manage_schedules', course_id=course.id) }}" class="btn btn-success">
+                    <i class="bi bi-calendar-week"></i> Gestionar Horarios
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de Horario de Clases -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-calendar-week"></i> Horario de Clases Virtuales
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if schedules %}
+                    <div class="row">
+                        {% set days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'] %}
+                        {% for day_num in range(6) %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="schedule-day-card">
+                                <div class="day-header 
+                                    {% if day_num == 5 %}bg-warning{% else %}bg-primary{% endif %} text-white p-2 rounded-top">
+                                    <h6 class="mb-0 text-center">
+                                        {{ days[day_num] }}
+                                        {% if day_num == 5 %}
+                                        <small class="d-block">Maratones/Simulacros</small>
+                                        {% endif %}
+                                    </h6>
+                                </div>
+                                <div class="schedule-content bg-light p-3 rounded-bottom">
+                                    {% set day_schedules = schedules|selectattr('day_of_week', 'equalto', day_num)|list %}
+                                    {% if day_schedules %}
+                                        {% for schedule in day_schedules %}
+                                        <div class="schedule-item mb-3 p-2 bg-white rounded border-start border-primary border-3">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <strong class="text-primary">
+                                                        {{ schedule.start_time.strftime('%H:%M') }} - {{ schedule.end_time.strftime('%H:%M') }}
+                                                    </strong>
+                                                    {% if schedule.class_type != 'regular' %}
+                                                    <span class="badge bg-warning text-dark ms-1">{{ schedule.class_type|title }}</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            
+                                            {% if schedule.notes %}
+                                            <small class="text-muted d-block mt-1">{{ schedule.notes }}</small>
+                                            {% endif %}
+                                            
+                                            <div class="mt-2">
+                                                {% set active_link = schedule.daily_link or schedule.meeting_link %}
+                                                {% if active_link %}
+                                                <a href="{{ active_link }}" target="_blank" class="btn btn-sm btn-success">
+                                                    <i class="bi bi-camera-video"></i> 
+                                                    {% if 'meet.google.com' in active_link %}Google Meet
+                                                    {% elif 'zoom.us' in active_link %}Zoom
+                                                    {% else %}Unirse a Clase
+                                                    {% endif %}
+                                                </a>
+                                                {% endif %}
+                                                
+                                                {% if current_user.role == 'admin' %}
+                                                <button class="btn btn-sm btn-outline-primary" onclick="showUpdateLinkModal({{ schedule.id }}, '{{ days[day_num] }}', '{{ schedule.start_time.strftime('%H:%M') }}')">
+                                                    <i class="bi bi-link"></i> Actualizar Link
+                                                </button>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <p class="text-muted text-center mb-0">Sin clases programadas</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        <!-- Domingo - Día de descanso -->
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="schedule-day-card">
+                                <div class="day-header bg-secondary text-white p-2 rounded-top">
+                                    <h6 class="mb-0 text-center">
+                                        Domingo
+                                        <small class="d-block">Día de Descanso</small>
+                                    </h6>
+                                </div>
+                                <div class="schedule-content bg-light p-3 rounded-bottom text-center">
+                                    <i class="bi bi-moon text-secondary fs-1"></i>
+                                    <p class="text-muted mb-0">¡Relájate y descansa!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted mt-3">No hay horarios configurados</h5>
+                        <p class="text-muted">Los horarios de clases virtuales aparecerán aquí una vez configurados por el administrador.</p>
+                        {% if current_user.role == 'admin' %}
+                        <a href="{{ url_for('manage_schedules', course_id=course.id) }}" class="btn btn-success">
+                            <i class="bi bi-plus-circle"></i> Configurar Primer Horario
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grid de Materiales -->
+    <div class="row g-4">
+        {% for material in materials %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header">
+                    {% if material.file_type == 'pdf' %}
+                        <i class="bi bi-file-earmark-pdf text-danger fs-3"></i>
+                    {% elif material.file_type == 'video' %}
+                        <i class="bi bi-play-circle text-primary fs-3"></i>
+                    {% elif material.file_type == 'document' %}
+                        <i class="bi bi-file-earmark-word text-info fs-3"></i>
+                    {% elif material.file_type == 'presentation' %}
+                        <i class="bi bi-file-earmark-slides text-warning fs-3"></i>
+                    {% else %}
+                        <i class="bi bi-file-earmark text-secondary fs-3"></i>
+                    {% endif %}
+                    <span class="ms-2 fw-bold">{{ material.title }}</span>
+                </div>
+                
+                <div class="card-body">
+                    {% if material.description %}
+                    <p class="card-text">{{ material.description }}</p>
+                    {% endif %}
+                    
+                    <small class="text-muted d-block mb-2">
+                        <i class="bi bi-person"></i> Subido por: {{ material.uploaded_by.full_name or material.uploaded_by.username }}
+                    </small>
+                    <small class="text-muted">
+                        <i class="bi bi-calendar"></i> {{ material.uploaded_at.strftime('%d/%m/%Y %H:%M') }}
+                    </small>
+                </div>
+                
+                <div class="card-footer">
+                    <div class="btn-group w-100" role="group">
+                        {% if material.file_type == 'video' %}
+                        <button class="btn btn-outline-primary" onclick="previewVideo('{{ material.file_url }}', '{{ material.title }}')">
+                            <i class="bi bi-play"></i> Ver
+                        </button>
+                        {% elif material.file_type == 'pdf' %}
+                        <button class="btn btn-outline-primary" onclick="previewPDF('{{ material.file_url }}', '{{ material.title }}')">
+                            <i class="bi bi-eye"></i> Ver
+                        </button>
+                        {% endif %}
+                        <a href="{{ material.file_url }}" download class="btn btn-outline-success">
+                            <i class="bi bi-download"></i> Descargar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not materials %}
+    <div class="alert alert-info text-center">
+        <h4 class="alert-heading">
+            <i class="bi bi-info-circle"></i> No hay materiales disponibles
+        </h4>
+        <p>Aún no se han subido materiales para este curso.</p>
+        {% if current_user.role in ['admin', 'teacher'] %}
+        <hr>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadMaterialModal">
+            <i class="bi bi-cloud-upload"></i> Subir el primer material
+        </button>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal para subir material -->
+{% if current_user.role in ['admin', 'teacher'] %}
+<div class="modal fade" id="uploadMaterialModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-cloud-upload"></i> Subir Material
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('upload_material', course_id=course.id) }}" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Título del Material</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Descripción (opcional)</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Archivo</label>
+                        <input type="file" class="form-control" id="file" name="file" required
+                               accept=".pdf,.doc,.docx,.ppt,.pptx,.mp4,.avi,.mov,.jpg,.jpeg,.png,.gif">
+                        <small class="text-muted">
+                            Formatos permitidos: PDF, Word, PowerPoint, Videos (MP4, AVI, MOV), Imágenes
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload"></i> Subir Material
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal para previsualizar video -->
+<div class="modal fade" id="videoPreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="videoTitle">Vista Previa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <video id="videoPlayer" controls class="w-100">
+                    Tu navegador no soporta el elemento de video.
+                </video>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para previsualizar PDF -->
+<div class="modal fade" id="pdfPreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="pdfTitle">Vista Previa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <iframe id="pdfViewer" style="width: 100%; height: 600px;" frameborder="0"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para actualizar link diario -->
+{% if current_user.role == 'admin' %}
+<div class="modal fade" id="updateLinkModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-link"></i> Actualizar Link de Clase
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="updateLinkForm">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong id="classInfo">Clase de Lunes 08:00</strong>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="daily_link" class="form-label">Nuevo Link de la Clase</label>
+                        <input type="url" class="form-control" id="daily_link" name="daily_link" 
+                               placeholder="https://meet.google.com/xxx-xxxx-xxx o https://zoom.us/j/xxxxxxxxx">
+                        <small class="text-muted">
+                            Este link tendrá prioridad sobre el link permanente para esta clase específica.
+                        </small>
+                    </div>
+                    
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="clearLink">
+                        <label class="form-check-label" for="clearLink">
+                            Borrar link diario (usar link permanente)
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Actualizar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+.schedule-day-card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    height: 100%;
+}
+
+.schedule-item {
+    transition: transform 0.2s ease;
+}
+
+.schedule-item:hover {
+    transform: translateX(5px);
+}
+
+.day-header {
+    background: linear-gradient(135deg, var(--bs-primary) 0%, var(--bs-primary-dark, #0d6efd) 100%);
+}
+
+.day-header.bg-warning {
+    background: linear-gradient(135deg, var(--bs-warning) 0%, #ff8c00 100%);
+}
+
+.day-header.bg-secondary {
+    background: linear-gradient(135deg, var(--bs-secondary) 0%, #495057 100%);
+}
+</style>
+
+<script>
+function previewVideo(url, title) {
+    document.getElementById('videoTitle').textContent = title;
+    document.getElementById('videoPlayer').src = url;
+    const modal = new bootstrap.Modal(document.getElementById('videoPreviewModal'));
+    modal.show();
+}
+
+function previewPDF(url, title) {
+    document.getElementById('pdfTitle').textContent = title;
+    document.getElementById('pdfViewer').src = url;
+    const modal = new bootstrap.Modal(document.getElementById('pdfPreviewModal'));
+    modal.show();
+}
+
+// Limpiar el video cuando se cierra el modal
+document.getElementById('videoPreviewModal').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('videoPlayer').pause();
+    document.getElementById('videoPlayer').src = '';
+});
+
+{% if current_user.role == 'admin' %}
+// Variables globales para el modal de actualizar link
+let currentScheduleId = null;
+
+function showUpdateLinkModal(scheduleId, day, time) {
+    currentScheduleId = scheduleId;
+    document.getElementById('classInfo').textContent = `Clase de ${day} ${time}`;
+    document.getElementById('daily_link').value = '';
+    document.getElementById('clearLink').checked = false;
+    
+    const modal = new bootstrap.Modal(document.getElementById('updateLinkModal'));
+    modal.show();
+}
+
+// Manejar la actualización de link diario
+document.getElementById('updateLinkForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const clearLink = document.getElementById('clearLink').checked;
+    const dailyLink = clearLink ? '' : document.getElementById('daily_link').value;
+    
+    const formData = new FormData();
+    formData.append('daily_link', dailyLink);
+    
+    fetch(`/schedule/${currentScheduleId}/update_daily_link`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload(); // Recargar para mostrar el cambio
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al actualizar el link');
+    });
+});
+
+// Manejar el checkbox para borrar link
+document.getElementById('clearLink').addEventListener('change', function() {
+    const dailyLinkInput = document.getElementById('daily_link');
+    if (this.checked) {
+        dailyLinkInput.disabled = true;
+        dailyLinkInput.value = '';
+    } else {
+        dailyLinkInput.disabled = false;
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

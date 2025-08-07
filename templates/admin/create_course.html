@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Curso - Aula Virtual{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('courses') }}">Cursos</a></li>
+                    <li class="breadcrumb-item active">Crear Curso</li>
+                </ol>
+            </nav>
+            
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">
+                        <i class="bi bi-plus-circle"></i> Crear Nuevo Curso
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('create_course') }}" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="course_image" class="form-label">
+                                <i class="bi bi-image text-primary"></i> Imagen del Curso (opcional)
+                            </label>
+                            <input type="file" class="form-control" id="course_image" name="course_image" accept=".jpg,.jpeg,.png">
+                            <small class="form-text text-muted">
+                                📸 Sube una imagen representativa del curso (JPG, PNG). Recomendado: 800x400px.
+                            </small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nombre del Curso</label>
+                            <input type="text" class="form-control" id="name" name="name" required
+                                   placeholder="Ej: Diplomado en Medicina Interna">
+                            <small class="form-text text-muted">
+                                Ingresa un nombre descriptivo para el curso
+                            </small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Descripción</label>
+                            <textarea class="form-control" id="description" name="description" rows="5" required
+                                      placeholder="Describe el contenido, objetivos y metodología del curso..."></textarea>
+                            <small class="form-text text-muted">
+                                Proporciona una descripción detallada del curso
+                            </small>
+                        </div>
+                        
+                        {% if current_user.role == 'admin' and teachers %}
+                        <div class="mb-3">
+                            <label for="teacher_id" class="form-label">Docente Asignado</label>
+                            <select class="form-select" id="teacher_id" name="teacher_id" required>
+                                <option value="">Seleccionar docente...</option>
+                                {% for teacher in teachers %}
+                                <option value="{{ teacher.id }}">
+                                    {{ teacher.full_name or teacher.username }} ({{ teacher.email }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted">
+                                Selecciona el docente responsable del curso
+                            </small>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Columnas Iniciales del Dashboard</label>
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> Se crearán automáticamente 4 columnas predeterminadas:
+                                <ul class="mb-0 mt-2">
+                                    <li>Introducción</li>
+                                    <li>Contenido Principal</li>
+                                    <li>Recursos</li>
+                                    <li>Actividades</li>
+                                </ul>
+                                <small>Podrás agregar más columnas y personalizar después de crear el curso.</small>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-save"></i> Crear Curso
+                            </button>
+                            <a href="{{ url_for('courses') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
