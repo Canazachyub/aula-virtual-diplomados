@@ -234,8 +234,34 @@
                     </div>
                     
                     <div class="mb-3">
+                        <label class="form-label">Tipo de Material</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="upload_type" id="upload_drive" value="drive" checked onclick="toggleUploadType()">
+                            <label class="form-check-label" for="upload_drive">
+                                <i class="bi bi-google"></i> Enlace de Google Drive (Recomendado)
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="upload_type" id="upload_file" value="file" onclick="toggleUploadType()">
+                            <label class="form-check-label" for="upload_file">
+                                <i class="bi bi-upload"></i> Subir archivo local
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3" id="drive_url_field">
+                        <label for="drive_url" class="form-label">URL de Google Drive</label>
+                        <input type="url" class="form-control" id="drive_url" name="drive_url" 
+                               placeholder="https://drive.google.com/file/d/1abc.../view">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle"></i> Pega aquí el enlace de tu archivo de Google Drive. 
+                            <strong>Asegúrate que el archivo sea público o que cualquier persona con el enlace pueda verlo.</strong>
+                        </small>
+                    </div>
+                    
+                    <div class="mb-3" id="file_upload_field" style="display: none;">
                         <label for="file" class="form-label">Archivo</label>
-                        <input type="file" class="form-control" id="file" name="file" required
+                        <input type="file" class="form-control" id="file" name="file"
                                accept=".pdf,.doc,.docx,.ppt,.pptx,.mp4,.avi,.mov,.jpg,.jpeg,.png,.gif">
                         <small class="text-muted">
                             Formatos permitidos: PDF, Word, PowerPoint, Videos (MP4, AVI, MOV), Imágenes
@@ -381,6 +407,27 @@ document.getElementById('videoPreviewModal').addEventListener('hidden.bs.modal',
     document.getElementById('videoPlayer').pause();
     document.getElementById('videoPlayer').src = '';
 });
+
+// Función para alternar entre Google Drive y archivo local
+function toggleUploadType() {
+    const driveRadio = document.getElementById('upload_drive');
+    const driveField = document.getElementById('drive_url_field');
+    const fileField = document.getElementById('file_upload_field');
+    const driveInput = document.getElementById('drive_url');
+    const fileInput = document.getElementById('file');
+    
+    if (driveRadio.checked) {
+        driveField.style.display = 'block';
+        fileField.style.display = 'none';
+        driveInput.required = true;
+        fileInput.required = false;
+    } else {
+        driveField.style.display = 'none';
+        fileField.style.display = 'block';
+        driveInput.required = false;
+        fileInput.required = true;
+    }
+}
 
 {% if current_user.role == 'admin' %}
 // Variables globales para el modal de actualizar link

@@ -24,7 +24,7 @@ else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///aula_diplomados.db'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['UPLOAD_FOLDER'] = 'static/uploads'
+app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER', 'static/uploads')
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max
 
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'gif', 'mp4', 'avi', 'mov', 'doc', 'docx', 'ppt', 'pptx'}
@@ -66,6 +66,23 @@ def get_drive_file_info(file_id):
         }
     except:
         return None
+
+def get_file_type_from_url(url):
+    """Determina el tipo de archivo desde una URL"""
+    url_lower = url.lower()
+    
+    if any(ext in url_lower for ext in ['.pdf']):
+        return 'pdf'
+    elif any(ext in url_lower for ext in ['.mp4', '.avi', '.mov', '.mkv']):
+        return 'video' 
+    elif any(ext in url_lower for ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']):
+        return 'image'
+    elif any(ext in url_lower for ext in ['.doc', '.docx']):
+        return 'document'
+    elif any(ext in url_lower for ext in ['.ppt', '.pptx']):
+        return 'presentation'
+    else:
+        return 'document'
 
 db = SQLAlchemy(app)
 login_manager = LoginManager()
