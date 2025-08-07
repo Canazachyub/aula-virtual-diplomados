@@ -2,19 +2,8 @@ services:
   - type: web
     name: aula-virtual-diplomados
     env: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install --force-reinstall -r requirements.txt
     startCommand: gunicorn app:app
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.5
-      - key: SECRET_KEY
-        generateValue: true
-      - key: DATABASE_URL
-        fromDatabase:
-          name: aula-virtual-db
-          property: connectionString
-
-databases:
-  - name: aula-virtual-db
-    databaseName: aula_virtual
-    user: aula_admin
+        value: 3.11.0
